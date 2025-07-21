@@ -9,15 +9,15 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type StoreHandler struct {
+type Handler struct {
 	service StoreService
 }
 
-func NewHandler(service StoreService) *StoreHandler {
-	return &StoreHandler{service}
+func NewHandler(service StoreService) *Handler {
+	return &Handler{service}
 }
 
-func (h *StoreHandler) Create(c echo.Context) error {
+func (h *Handler) Create(c echo.Context) error {
 	var req dto.StoreRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
@@ -35,7 +35,7 @@ func (h *StoreHandler) Create(c echo.Context) error {
 	return c.JSON(http.StatusCreated, ToStoreResponse(store))
 }
 
-func (h *StoreHandler) FindByID(c echo.Context) error {
+func (h *Handler) FindByID(c echo.Context) error {
 	id := c.Param("id")
 
 	store, err := h.service.FindByID(c.Request().Context(), id)
@@ -46,7 +46,7 @@ func (h *StoreHandler) FindByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, ToStoreResponse(store))
 }
 
-func (h *StoreHandler) FindAll(c echo.Context) error {
+func (h *Handler) FindAll(c echo.Context) error {
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
@@ -65,7 +65,7 @@ func (h *StoreHandler) FindAll(c echo.Context) error {
 	})
 }
 
-func (h *StoreHandler) Update(c echo.Context) error {
+func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
 	var req dto.StoreRequest
 	if err := c.Bind(&req); err != nil {
@@ -83,7 +83,7 @@ func (h *StoreHandler) Update(c echo.Context) error {
 	return c.JSON(http.StatusOK, ToStoreResponse(store))
 }
 
-func (h *StoreHandler) Delete(c echo.Context) error {
+func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
 
 	if err := h.service.Delete(c.Request().Context(), id); err != nil {

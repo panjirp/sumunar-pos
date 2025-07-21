@@ -4,13 +4,14 @@ package routes
 
 import (
 	"sumunar-pos-core/internal/auth"
+	"sumunar-pos-core/internal/store"
 	"sumunar-pos-core/internal/user"
 	"sumunar-pos-core/middleware"
 
 	"github.com/labstack/echo/v4"
 )
 
-func RegisterRoutes(e *echo.Echo, authHandler *auth.Handler, userHandler *user.Handler) {
+func RegisterRoutes(e *echo.Echo, authHandler *auth.Handler, userHandler *user.Handler, storeHandler *store.Handler) {
 	// Public routes
 	auth := e.Group("/auth")
 	auth.POST("/login", authHandler.Login)
@@ -30,4 +31,9 @@ func RegisterRoutes(e *echo.Echo, authHandler *auth.Handler, userHandler *user.H
 	storeGroup := e.Group("/stores")
 	storeGroup.Use(middleware.JWTAuthMiddleware)
 	storeGroup.Use(middleware.RequireRoles("admin", "owner"))
+	storeGroup.POST("", storeHandler.Create)
+	storeGroup.GET("", storeHandler.FindAll)
+	storeGroup.GET("/:id", storeHandler.FindByID)
+	storeGroup.PUT("/:id", storeHandler.Update)
+	storeGroup.DELETE("/:id", storeHandler.Delete)
 }
