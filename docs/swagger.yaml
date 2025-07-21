@@ -1,0 +1,86 @@
+basePath: /api/v1
+definitions:
+  dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dto.StoreRequest:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - address
+    - name
+    type: object
+  dto.StoreResponse:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      phone:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: panji@example.com
+    name: Panji Rachmatullah
+  description: This is a POS backend for Sumunar.
+  title: Sumunar POS API
+  version: "1.0"
+paths:
+  /stores:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Store request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StoreRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new store
+      tags:
+      - stores
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

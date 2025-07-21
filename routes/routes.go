@@ -9,31 +9,43 @@ import (
 	"sumunar-pos-core/middleware"
 
 	"github.com/labstack/echo/v4"
+
+	_ "sumunar-pos-core/docs" // penting!
+
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 func RegisterRoutes(e *echo.Echo, authHandler *auth.Handler, userHandler *user.Handler, storeHandler *store.Handler) {
-	// Public routes
-	auth := e.Group("/auth")
+	// Swagger (can be outside /api if you want it public)
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	// /api group (root for protected and nested routes)
+	api := e.Group("/api")
+
+	// Public Auth routes
+	auth := api.Group("/auth")
 	auth.POST("/login", authHandler.Login)
 	auth.POST("/register", authHandler.Register)
 	auth.POST("/google-login", authHandler.GoogleLogin)
 
-	// Protected routes
-	api := e.Group("/api")
-	api.Use(middleware.JWTAuthMiddleware)
-	api.GET("/users", userHandler.ListUsers)
-	api.GET("/users/:id", userHandler.GetUser)
-	api.POST("/users", userHandler.CreateUser)
-
+	// Token routes (could be public or protected depending on design)
 	api.POST("/refresh", authHandler.RefreshToken)
 	api.POST("/logout", authHandler.Logout)
 
-	storeGroup := e.Group("/stores")
-	storeGroup.Use(middleware.JWTAuthMiddleware)
-	storeGroup.Use(middleware.RequireRoles("admin", "owner"))
-	storeGroup.POST("", storeHandler.Create)
-	storeGroup.GET("", storeHandler.FindAll)
-	storeGroup.GET("/:id", storeHandler.FindByID)
-	storeGroup.PUT("/:id", storeHandler.Update)
-	storeGroup.DELETE("/:id", storeHandler.Delete)
+	// Protected routes
+	api.Use(middleware.JWTAuthMiddleware)
+
+	// Users
+	users := api.Group("/users")
+	users.GET("", userHandler.ListUsers)
+	users.GET("/:id", userHandler.GetUser)
+	users.POST("", userHandler.CreateUser)
+
+	// Stores (only for admin/owner)
+	stores := api.Group("/stores", middleware.RequireRoles("admin", "owner"))
+	stores.POST("", storeHandler.Create)
+	stores.GET("", storeHandler.FindAll)
+	stores.GET("/:id", storeHandler.FindByID)
+	stores.PUT("/:id", storeHandler.Update)
+	stores.DELETE("/:id", storeHandler.Delete)
 }

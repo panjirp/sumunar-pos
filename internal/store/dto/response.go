@@ -11,3 +11,7 @@ type StoreResponse struct {
 	UpdatedAt string  `json:"updated_at"`
 	UpdatedBy string  `json:"updated_by"`
 }
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+}

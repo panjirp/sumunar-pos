@@ -17,6 +17,17 @@ func NewHandler(service StoreService) *Handler {
 	return &Handler{service}
 }
 
+// Create godoc
+// @Summary Create a new store
+// @Tags stores
+// @Accept json
+// @Produce json
+// @Param request body dto.StoreRequest true "Store request"
+// @Success 201 {object} dto.StoreResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Security BearerAuth
+// @Router /stores [post]
 func (h *Handler) Create(c echo.Context) error {
 	var req dto.StoreRequest
 	if err := c.Bind(&req); err != nil {

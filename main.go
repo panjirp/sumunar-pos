@@ -10,6 +10,20 @@ import (
 )
 
 func main() {
+	// @title Sumunar POS API
+	// @version 1.0
+	// @description This is a POS backend for Sumunar.
+
+	// @contact.name Panji Rachmatullah
+	// @contact.email panji@example.com
+
+	// @host localhost:8080
+	// @BasePath /api/v1
+
+	// @securityDefinitions.apikey BearerAuth
+	// @in header
+	// @name Authorization
+
 	// Load env and config
 	config.LoadConfig()
 
