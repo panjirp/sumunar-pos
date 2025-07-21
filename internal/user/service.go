@@ -4,16 +4,14 @@ import (
 	"context"
 	"log"
 
-	"sumunar-pos-core/internal/base"
+	"sumunar-pos-core/internal/user/dto"
 	"sumunar-pos-core/middleware"
-
-	"github.com/google/uuid"
 )
 
 type Service interface {
 	GetUser(ctx context.Context, id string) (*User, error)
 	ListUsers(ctx context.Context, limit, offset int) ([]*User, int, error)
-	CreateUser(ctx context.Context, username, email string) (*User, error)
+	CreateUser(ctx context.Context, req *dto.UserRequest) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByUsername(ctx context.Context, username string) (*User, error)
 	UpdateLastLogin(ctx context.Context, id string) error
@@ -43,22 +41,14 @@ func (s *service) ListUsers(ctx context.Context, limit, offset int) ([]*User, in
 	return s.repo.FindAll(ctx, limit, offset)
 }
 
-func (s *service) CreateUser(ctx context.Context, username, email string) (*User, error) {
+func (s *service) CreateUser(ctx context.Context, req *dto.UserRequest) (*User, error) {
 
 	userID, err := middleware.GetUserIDFromContext(ctx)
 	if err != nil {
 		log.Println("failed to get user id from context:", err)
 	}
-	u := &User{
-		ID:       uuid.New().String(),
-		Username: username,
-		Email:    email,
-		Provider: "local",
-		Role:     "owner",
-		BaseModel: base.BaseModel{
-			CreatedBy: userID,
-		},
-	}
+
+	u := ToUserModel(req, userID)
 
 	if err := s.repo.Create(ctx, u); err != nil {
 		return nil, err

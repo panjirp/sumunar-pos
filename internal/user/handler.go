@@ -1,11 +1,12 @@
 package user
 
 import (
-	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+
+	"sumunar-pos-core/internal/user/dto"
 )
 
 type Handler struct {
@@ -34,16 +35,10 @@ func (h *Handler) ListUsers(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
-	pages := int(math.Ceil(float64(total) / float64(limit)))
+	// pages := int(math.Ceil(float64(total) / float64(limit)))
+	res := NewPaginatedResponse(users, total, page, limit)
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"data":   users,
-		"total":  total,
-		"page":   page,
-		"pages":  pages,
-		"limit":  limit,
-		"offset": offset,
-	})
+	return c.JSON(http.StatusOK, res)
 }
 
 func (h *Handler) GetUser(c echo.Context) error {
@@ -61,16 +56,13 @@ func (h *Handler) GetUser(c echo.Context) error {
 func (h *Handler) CreateUser(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	var req struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-	}
+	var req dto.UserRequest
 
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid request body"})
 	}
 
-	user, err := h.service.CreateUser(ctx, req.Username, req.Email)
+	user, err := h.service.CreateUser(ctx, &req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
