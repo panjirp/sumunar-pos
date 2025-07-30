@@ -4,6 +4,9 @@ package routes
 
 import (
 	"sumunar-pos-core/internal/auth"
+	"sumunar-pos-core/internal/product"
+	"sumunar-pos-core/internal/productservice"
+	"sumunar-pos-core/internal/servicetype"
 	"sumunar-pos-core/internal/store"
 	"sumunar-pos-core/internal/user"
 	"sumunar-pos-core/middleware"
@@ -15,8 +18,8 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
-func RegisterRoutes(e *echo.Echo, authHandler *auth.Handler, userHandler *user.Handler, storeHandler *store.Handler) {
-	// Swagger (can be outside /api if you want it public)
+func RegisterRoutes(e *echo.Echo, authHandler *auth.Handler, userHandler *user.Handler,
+	storeHandler *store.Handler, serviceHandler *servicetype.Handler, productHandler *product.Handler, productServiceHandler *productservice.Handler) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// /api group (root for protected and nested routes)
@@ -48,4 +51,29 @@ func RegisterRoutes(e *echo.Echo, authHandler *auth.Handler, userHandler *user.H
 	stores.GET("/:id", storeHandler.FindByID)
 	stores.PUT("/:id", storeHandler.Update)
 	stores.DELETE("/:id", storeHandler.Delete)
+	stores.POST("/:id/logo", storeHandler.UploadLogo, middleware.ValidateImageFile)
+
+	// Stores (only for admin/owner)
+	services := api.Group("/servicetypes", middleware.RequireRoles("admin", "owner"))
+	services.POST("", serviceHandler.Create)
+	services.GET("", serviceHandler.FindAll)
+	services.GET("/:id", serviceHandler.FindByID)
+	services.PUT("/:id", serviceHandler.Update)
+	services.DELETE("/:id", serviceHandler.Delete)
+
+	// Stores (only for admin/owner)
+	products := api.Group("/products", middleware.RequireRoles("admin", "owner"))
+	products.POST("", productHandler.Create)
+	products.GET("", productHandler.FindAll)
+	products.GET("/:id", productHandler.FindByID)
+	products.PUT("/:id", productHandler.Update)
+	products.DELETE("/:id", productHandler.Delete)
+
+	// Stores (only for admin/owner)
+	productservice := api.Group("/productservice", middleware.RequireRoles("admin", "owner"))
+	productservice.POST("", productServiceHandler.Create)
+	productservice.GET("", productServiceHandler.FindAll)
+	productservice.GET("/:id", productServiceHandler.FindByID)
+	productservice.PUT("/:id", productServiceHandler.Update)
+	productservice.DELETE("/:id", productServiceHandler.Delete)
 }

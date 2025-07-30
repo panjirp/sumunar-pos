@@ -1,29 +1,25 @@
-package store
+package product
 
 import (
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 
-	"sumunar-pos-core/internal/store/dto"
+	"sumunar-pos-core/internal/product/dto"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
-	service StoreService
+	service ProductService
 }
 
-func NewHandler(service StoreService) *Handler {
+func NewHandler(service ProductService) *Handler {
 	return &Handler{service}
 }
 
 // Create godoc
-// @Summary Create a new store
-// @Tags stores
+// @Summary Create a new product
+// @Tags products
 // @Accept json
 // @Produce json
 // @Param request body dto.StoreRequest true "Store request"
@@ -31,9 +27,9 @@ func NewHandler(service StoreService) *Handler {
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Security BearerAuth
-// @Router /stores [post]
+// @Router /products [post]
 func (h *Handler) Create(c echo.Context) error {
-	var req dto.StoreRequest
+	var req dto.ProductRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
 	}
@@ -42,35 +38,35 @@ func (h *Handler) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	store, err := h.service.Create(c.Request().Context(), &req)
+	product, err := h.service.Create(c.Request().Context(), &req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, ToStoreResponse(store))
+	return c.JSON(http.StatusCreated, ToProductResponse(product))
 }
 
 func (h *Handler) FindByID(c echo.Context) error {
 	id := c.Param("id")
 
-	store, err := h.service.FindByID(c.Request().Context(), id)
+	product, err := h.service.FindByID(c.Request().Context(), id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, ToStoreResponse(store))
+	return c.JSON(http.StatusOK, ToProductResponse(product))
 }
 
 func (h *Handler) FindAll(c echo.Context) error {
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
-	stores, total, err := h.service.FindAll(c.Request().Context(), limit, offset)
+	products, total, err := h.service.FindAll(c.Request().Context(), limit, offset)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	responses := ToStoreListResponse(stores)
+	responses := ToProductListResponse(products)
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"data":   responses,
@@ -82,7 +78,7 @@ func (h *Handler) FindAll(c echo.Context) error {
 
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
-	var req dto.StoreRequest
+	var req dto.ProductRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
 	}
@@ -90,12 +86,12 @@ func (h *Handler) Update(c echo.Context) error {
 		return err
 	}
 
-	store, err := h.service.Update(c.Request().Context(), id, &req)
+	product, err := h.service.Update(c.Request().Context(), id, &req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, ToStoreResponse(store))
+	return c.JSON(http.StatusOK, ToProductResponse(product))
 }
 
 func (h *Handler) Delete(c echo.Context) error {
@@ -106,40 +102,4 @@ func (h *Handler) Delete(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
-}
-
-func (h *Handler) UploadLogo(c echo.Context) error {
-	storeID := c.Param("id")
-
-	file, err := c.FormFile("logo")
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "logo is required")
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
-	// Simpan file di folder `uploads/logos/`
-	filename := uuid.NewString() + filepath.Ext(file.Filename)
-	dstPath := filepath.Join("uploads", "logos", filename)
-
-	dst, err := os.Create(dstPath)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
-
-	if _, err = io.Copy(dst, src); err != nil {
-		return err
-	}
-
-	logoPath := "/uploads/logos/" + filename
-	if err := h.service.UpdateLogo(c.Request().Context(), storeID, logoPath); err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{"logo": logoPath})
 }

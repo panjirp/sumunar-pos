@@ -8,6 +8,7 @@ import (
 
 type StoreRepository interface {
 	Create(ctx context.Context, store *Store) error
+	CreateTx(ctx context.Context, tx db.DBTX, store *Store) error
 	FindByID(ctx context.Context, id string) (*Store, error)
 	FindAll(ctx context.Context, limit, offset int) ([]*Store, int, error)
 	Update(ctx context.Context, store *Store) error
@@ -39,8 +40,26 @@ func (r *storeRepo) Create(ctx context.Context, store *Store) error {
 	return err
 }
 
+func (r *storeRepo) CreateTx(ctx context.Context, tx db.DBTX, store *Store) error {
+	query := `
+		INSERT INTO stores (id, name, address, phone, logo, is_active, created_at, created_by, updated_at, updated_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8)
+	`
+	_, err := tx.Exec(ctx, query,
+		store.ID,
+		store.Name,
+		store.Address,
+		store.Phone,
+		store.Logo,
+		store.IsActive,
+		store.CreatedAt,
+		store.CreatedBy,
+	)
+	return err
+}
+
 func (r *storeRepo) FindByID(ctx context.Context, id string) (*Store, error) {
-	query := `SELECT id, name, address, phone, is_active, created_at, created_by, updated_at, updated_by FROM stores WHERE id = $1`
+	query := `SELECT id, name, address, phone, logo, is_active, created_at, created_by, updated_at, updated_by FROM stores WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	var store Store
@@ -49,6 +68,7 @@ func (r *storeRepo) FindByID(ctx context.Context, id string) (*Store, error) {
 		&store.Name,
 		&store.Address,
 		&store.Phone,
+		&store.Logo,
 		&store.IsActive,
 		&store.CreatedAt,
 		&store.CreatedBy,
@@ -62,7 +82,7 @@ func (r *storeRepo) FindByID(ctx context.Context, id string) (*Store, error) {
 }
 
 func (r *storeRepo) FindAll(ctx context.Context, limit, offset int) ([]*Store, int, error) {
-	query := `SELECT id, name, address, phone, is_active, created_at, created_by, updated_at, updated_by FROM stores LIMIT $1 OFFSET $2`
+	query := `SELECT id, name, address, phone, logo, is_active, created_at, created_by, updated_at, updated_by FROM stores LIMIT $1 OFFSET $2`
 	rows, err := r.db.Query(ctx, query, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -77,6 +97,7 @@ func (r *storeRepo) FindAll(ctx context.Context, limit, offset int) ([]*Store, i
 			&s.Name,
 			&s.Address,
 			&s.Phone,
+			&s.Logo,
 			&s.IsActive,
 			&s.CreatedAt,
 			&s.CreatedBy,
@@ -100,9 +121,9 @@ func (r *storeRepo) FindAll(ctx context.Context, limit, offset int) ([]*Store, i
 
 func (r *storeRepo) Update(ctx context.Context, store *Store) error {
 	query := `
-		UPDATE stores SET name = $1, address = $2, phone = $3, is_active = $4,
-		updated_at = $5, updated_by = $6
-		WHERE id = $7
+		UPDATE stores SET name = $1, address = $2, phone = $3, logo = $4, is_active = $5,
+		updated_at = $6, updated_by = $7
+		WHERE id = $8
 	`
 	_, err := r.db.Exec(ctx, query,
 		store.Name,

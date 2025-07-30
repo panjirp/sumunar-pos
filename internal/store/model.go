@@ -9,5 +9,6 @@ type Store struct {
 	Name    string  `json:"name"`
 	Address string  `json:"address"`
 	Phone   *string `json:"phone,omitempty"`
+	Logo    *string `json:"logo,omitempty"`
 	base.BaseModel
 }
