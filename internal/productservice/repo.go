@@ -17,7 +17,7 @@ type productServiceRepo struct {
 	db db.DBTX
 }
 
-func NewServiceRepo(db db.DBTX) ProductServiceRepository {
+func NewProductServiceRepository(db db.DBTX) ProductServiceRepository {
 	return &productServiceRepo{db}
 }
 

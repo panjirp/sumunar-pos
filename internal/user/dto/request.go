@@ -1,7 +1,7 @@
 package dto
 
 type UserRequest struct {
-	Username string  `json:"username" validate:"required"`
+	Fullname string  `json:"fullname" validate:"required"`
 	Email    string  `json:"email" validate:"required,email"`
 	Password *string `json:"password,omitempty"` // hanya untuk login/register manual
 	GoogleID *string `json:"google_id,omitempty"`

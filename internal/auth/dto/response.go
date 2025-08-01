@@ -2,7 +2,7 @@ package dto
 
 type AuthResponse struct {
 	ID           string `json:"id"`
-	Username     string `json:"username"`
+	Fullname     string `json:"fullname"`
 	Email        string `json:"email"`
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
@@ -16,3 +16,7 @@ type AuthResponse struct {
 // 	Revoked   bool
 // 	CreatedAt time.Time
 // }
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+}

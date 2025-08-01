@@ -17,14 +17,14 @@ type productRepo struct {
 	db db.DBTX
 }
 
-func NewProductRepo(db db.DBTX) ProductRepository {
+func NewProductRepository(db db.DBTX) ProductRepository {
 	return &productRepo{db}
 }
 
 func (r *productRepo) Create(ctx context.Context, productType *Product) error {
 	query := `
 		INSERT INTO products (id, name, store_id, is_active, created_at, created_by, updated_at, updated_by)
-		VALUES ($1, $2, $3, $4, $5, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6, $5, $6)
 	`
 	_, err := r.db.Exec(ctx, query,
 		productType.ID,

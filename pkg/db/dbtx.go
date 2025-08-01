@@ -13,3 +13,9 @@ type DBTX interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
+
+// TxBeginner adds support for transactions
+type TxBeginner interface {
+	DBTX
+	Begin(ctx context.Context) (pgx.Tx, error)
+}

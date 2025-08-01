@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"sumunar-pos-core/pkg/db"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -28,4 +30,19 @@ func Connect() {
 	}
 
 	log.Println("✅ Connected to PostgreSQL")
+}
+
+// GetDB returns the default database connection as DBTX
+func GetDB() db.DBTX {
+	if Pool == nil {
+		log.Fatal("❌ DB not initialized. Call db.Connect() first.")
+	}
+	return Pool
+}
+
+func GetTxBeginner() db.TxBeginner {
+	if Pool == nil {
+		log.Fatal("DB not initialized")
+	}
+	return Pool
 }

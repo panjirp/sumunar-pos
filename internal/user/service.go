@@ -13,15 +13,15 @@ type Service interface {
 	ListUsers(ctx context.Context, limit, offset int) ([]*User, int, error)
 	CreateUser(ctx context.Context, req *dto.UserRequest) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
-	FindByUsername(ctx context.Context, username string) (*User, error)
+	FindByFullname(ctx context.Context, fullname string) (*User, error)
 	UpdateLastLogin(ctx context.Context, id string) error
 }
 
 type service struct {
-	repo Repository
+	repo UserRepository
 }
 
-func NewService(repo Repository) Service {
+func NewService(repo UserRepository) Service {
 	return &service{repo: repo}
 }
 
@@ -33,8 +33,8 @@ func (s *service) FindByEmail(ctx context.Context, email string) (*User, error) 
 	return s.repo.FindByEmail(ctx, email)
 }
 
-func (s *service) FindByUsername(ctx context.Context, username string) (*User, error) {
-	return s.repo.FindByUsername(ctx, username)
+func (s *service) FindByFullname(ctx context.Context, fullname string) (*User, error) {
+	return s.repo.FindByFullname(ctx, fullname)
 }
 
 func (s *service) ListUsers(ctx context.Context, limit, offset int) ([]*User, int, error) {

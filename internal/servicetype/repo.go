@@ -17,7 +17,7 @@ type serviceRepo struct {
 	db db.DBTX
 }
 
-func NewServiceRepo(db db.DBTX) ServiceRepository {
+func NewServiceRepository(db db.DBTX) ServiceRepository {
 	return &serviceRepo{db}
 }
 

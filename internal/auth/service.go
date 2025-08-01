@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"sumunar-pos-core/internal/base"
+	"sumunar-pos-core/internal/auth/dto"
 	"sumunar-pos-core/internal/user"
 	"sumunar-pos-core/middleware"
 	"sumunar-pos-core/pkg/hash"
@@ -19,7 +19,7 @@ import (
 )
 
 type Service interface {
-	RegisterManual(ctx context.Context, username, email, password string) (*user.User, error)
+	RegisterManual(ctx context.Context, req dto.RegisterRequest) (string, string, *user.User, error)
 	Login(ctx context.Context, email, password string) (string, string, *user.User, error)
 	LoginWithGoogle(ctx context.Context, IDToken string) (*user.User, error)
 	RefreshToken(ctx context.Context, refreshToken string) (string, string, error)
@@ -27,42 +27,47 @@ type Service interface {
 }
 
 type service struct {
-	userRepo         user.Repository
+	userRepo         user.UserRepository
 	refreshTokenRepo RefreshTokenRepository
 }
 
-func NewService(userRepo user.Repository, refreshTokenRepo RefreshTokenRepository) Service {
+func NewService(userRepo user.UserRepository, refreshTokenRepo RefreshTokenRepository) Service {
 	return &service{userRepo: userRepo, refreshTokenRepo: refreshTokenRepo}
 }
 
-func (s *service) RegisterManual(ctx context.Context, username, email, password string) (*user.User, error) {
+func (s *service) RegisterManual(ctx context.Context, req dto.RegisterRequest) (string, string, *user.User, error) {
 
 	// Check if user exists (by email)
-	existingUser, _ := s.userRepo.FindByEmail(ctx, email)
+	existingUser, _ := s.userRepo.FindByEmail(ctx, req.Email)
 	if existingUser != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Email already registered")
+		return "", "", nil, echo.NewHTTPError(http.StatusBadRequest, "Email already registered")
 	}
 
 	// Hash password
-	hashedPassword, err := hash.HashPassword(password)
+	hashedPassword, err := hash.HashPassword(req.Password)
 	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to hash password")
+		return "", "", nil, echo.NewHTTPError(http.StatusInternalServerError, "Failed to hash password")
 	}
 
-	u := &user.User{
-		ID:       uuid.NewString(),
-		Username: username,
-		Email:    email,
-		Password: &hashedPassword,
-		Role:     "owner",
+	u := ToUserModel(&req, hashedPassword)
+
+	token, err := middleware.GenerateJWT(u.ID, u.Role)
+	if err != nil {
+		return "", "", nil, echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	err = s.userRepo.Create(ctx, u)
 	if err != nil {
-		return nil, err
+		return "", "", nil, echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return u, nil
+	refresh := ToRefreshTokenModel(u.ID)
+	err = s.refreshTokenRepo.Create(ctx, refresh)
+	if err != nil {
+		return "", "", nil, echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return token, refresh.Token, u, nil
 }
 
 func (s *service) Login(ctx context.Context, email, password string) (string, string, *user.User, error) {
@@ -79,17 +84,17 @@ func (s *service) Login(ctx context.Context, email, password string) (string, st
 	if err != nil {
 		return "", "", nil, echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	refresh := &RefreshToken{
-		ID:        uuid.New().String(),
-		Token:     utils.GenerateRandomToken(),
-		UserID:    u.ID,
-		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
-		Revoked:   false,
-		BaseModel: base.BaseModel{
-			CreatedBy: u.ID,
-		},
+
+	refresh := ToRefreshTokenModel(u.ID)
+	err = s.refreshTokenRepo.RevokeAllByUser(ctx, u.ID)
+	if err != nil {
+		return "", "", nil, echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	_ = s.refreshTokenRepo.Create(ctx, refresh)
+
+	err = s.refreshTokenRepo.Create(ctx, refresh)
+	if err != nil {
+		return "", "", nil, echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
 
 	return token, refresh.Token, u, nil
 }
@@ -128,7 +133,7 @@ func (s *service) LoginWithGoogle(ctx context.Context, IDToken string) (*user.Us
 	// Jika belum ada → daftar
 	newUser := &user.User{
 		ID:        uuid.New().String(),
-		Username:  name,
+		Fullname:  name,
 		Email:     email,
 		GoogleID:  &sub,
 		Role:      "user",
@@ -164,18 +169,13 @@ func (s *service) RefreshToken(ctx context.Context, refreshToken string) (string
 	if err != nil {
 		log.Println("failed to get user id from context:", err)
 	}
-	newRefresh := &RefreshToken{
-		ID:        uuid.New().String(),
-		Token:     utils.GenerateRandomToken(), // your implementation
-		UserID:    user.ID,
-		ExpiresAt: time.Now().Add(7 * 24 * time.Hour),
-		Revoked:   false,
-		BaseModel: base.BaseModel{
-			CreatedBy: userID,
-		},
-	}
+
+	newRefresh := ToRefreshTokenModel(userID)
 	_ = s.refreshTokenRepo.Revoke(ctx, t.ID)
-	_ = s.refreshTokenRepo.Create(ctx, newRefresh)
+	err = s.refreshTokenRepo.Create(ctx, newRefresh)
+	if err != nil {
+		return "", "", echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
 
 	return accessToken, newRefresh.Token, nil
 }

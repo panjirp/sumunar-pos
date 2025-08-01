@@ -5,9 +5,8 @@ import (
 	"log"
 	"sumunar-pos-core/internal/productservice/dto"
 	"sumunar-pos-core/middleware"
+	"sumunar-pos-core/pkg/db"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ProductServiceService interface {
@@ -20,15 +19,14 @@ type ProductServiceService interface {
 
 type service struct {
 	repo ProductServiceRepository
-	db   *pgxpool.Pool
+	db   db.DBTX
 }
 
-func NewService(repo ProductServiceRepository, db *pgxpool.Pool) ProductServiceService {
-	return &service{repo, db}
+func NewService(repo ProductServiceRepository, db db.DBTX) ProductServiceService {
+	return &service{repo: repo, db: db}
 }
 
 func (s *service) Create(ctx context.Context, req *dto.ProductServiceRequest) (*ProductService, error) {
-
 	userID, err := middleware.GetUserIDFromContext(ctx)
 	if err != nil {
 		log.Println("failed to get user id from context:", err)
@@ -44,19 +42,11 @@ func (s *service) Create(ctx context.Context, req *dto.ProductServiceRequest) (*
 }
 
 func (s *service) FindByID(ctx context.Context, id string) (*ProductService, error) {
-	productService, err := s.repo.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return productService, nil
+	return s.repo.FindByID(ctx, id)
 }
 
 func (s *service) FindAll(ctx context.Context, limit, offset int) ([]*ProductService, int, error) {
-	productServices, total, err := s.repo.FindAll(ctx, limit, offset)
-	if err != nil {
-		return nil, 0, err
-	}
-	return productServices, total, nil
+	return s.repo.FindAll(ctx, limit, offset)
 }
 
 func (s *service) Update(ctx context.Context, id string, req *dto.ProductServiceRequest) (*ProductService, error) {

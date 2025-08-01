@@ -4,33 +4,33 @@ package user
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"sumunar-pos-core/pkg/db"
 )
 
-type Repository interface {
+type UserRepository interface {
 	FindByID(ctx context.Context, id string) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
-	FindByUsername(ctx context.Context, username string) (*User, error)
+	FindByFullname(ctx context.Context, fullname string) (*User, error)
 	Create(ctx context.Context, user *User) error
 	FindAll(ctx context.Context, limit, offset int) ([]*User, int, error)
 	UpdateLastLogin(ctx context.Context, id string) error
 }
 
-type repository struct {
-	db *pgxpool.Pool
+type userRepo struct {
+	db db.DBTX
 }
 
-func NewRepository(db *pgxpool.Pool) Repository {
-	return &repository{db: db}
+func NewUserRepository(db db.DBTX) UserRepository {
+	return &userRepo{db: db}
 }
 
-func (r *repository) FindByID(ctx context.Context, id string) (*User, error) {
-	query := `SELECT id, username, email, password, role, last_login, updated_at, is_active FROM users WHERE id=$1`
+func (r *userRepo) FindByID(ctx context.Context, id string) (*User, error) {
+	query := `SELECT id, fullname, email, password, role, last_login, updated_at, is_active FROM users WHERE id=$1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	var u User
 	err := row.Scan(
-		&u.ID, &u.Username, &u.Email, &u.Password,
+		&u.ID, &u.Fullname, &u.Email, &u.Password,
 		&u.Role, &u.LastLogin, &u.UpdatedAt, &u.IsActive,
 	)
 	if err != nil {
@@ -39,13 +39,13 @@ func (r *repository) FindByID(ctx context.Context, id string) (*User, error) {
 	return &u, nil
 }
 
-func (r *repository) FindByEmail(ctx context.Context, email string) (*User, error) {
-	query := `SELECT id, username, email, password, role, last_login, updated_at, is_active FROM users WHERE email=$1`
+func (r *userRepo) FindByEmail(ctx context.Context, email string) (*User, error) {
+	query := `SELECT id, fullname, email, password, role, last_login, updated_at, is_active FROM users WHERE email=$1`
 	row := r.db.QueryRow(ctx, query, email)
 
 	var u User
 	err := row.Scan(
-		&u.ID, &u.Username, &u.Email, &u.Password,
+		&u.ID, &u.Fullname, &u.Email, &u.Password,
 		&u.Role, &u.LastLogin, &u.UpdatedAt, &u.IsActive,
 	)
 	if err != nil {
@@ -54,13 +54,13 @@ func (r *repository) FindByEmail(ctx context.Context, email string) (*User, erro
 	return &u, nil
 }
 
-func (r *repository) FindByUsername(ctx context.Context, username string) (*User, error) {
-	query := `SELECT id, username, email, password, role, last_login, updated_at, is_active FROM users WHERE username=$1`
-	row := r.db.QueryRow(ctx, query, username)
+func (r *userRepo) FindByFullname(ctx context.Context, fullname string) (*User, error) {
+	query := `SELECT id, fullname, email, password, role, last_login, updated_at, is_active FROM users WHERE fullname=$1`
+	row := r.db.QueryRow(ctx, query, fullname)
 
 	var u User
 	err := row.Scan(
-		&u.ID, &u.Username, &u.Email, &u.Password,
+		&u.ID, &u.Fullname, &u.Email, &u.Password,
 		&u.Role, &u.LastLogin, &u.UpdatedAt, &u.IsActive,
 	)
 	if err != nil {
@@ -69,9 +69,9 @@ func (r *repository) FindByUsername(ctx context.Context, username string) (*User
 	return &u, nil
 }
 
-func (r *repository) FindAll(ctx context.Context, limit, offset int) ([]*User, int, error) {
+func (r *userRepo) FindAll(ctx context.Context, limit, offset int) ([]*User, int, error) {
 	const queryUsers = `
-		SELECT id, username, email, google_id, password, picture, provider,
+		SELECT id, fullname, email, google_id, password, picture, provider,
 		       last_login, role, is_active, created_at, updated_at
 		FROM users
 		ORDER BY created_at DESC
@@ -91,7 +91,7 @@ func (r *repository) FindAll(ctx context.Context, limit, offset int) ([]*User, i
 	for rows.Next() {
 		var u User
 		if err := rows.Scan(
-			&u.ID, &u.Username, &u.Email, &u.GoogleID, &u.Password, &u.Picture,
+			&u.ID, &u.Fullname, &u.Email, &u.GoogleID, &u.Password, &u.Picture,
 			&u.Provider, &u.LastLogin, &u.Role, &u.IsActive, &u.CreatedAt, &u.UpdatedAt,
 		); err != nil {
 			return nil, 0, err
@@ -108,17 +108,17 @@ func (r *repository) FindAll(ctx context.Context, limit, offset int) ([]*User, i
 	return users, total, nil
 }
 
-func (r *repository) Create(ctx context.Context, u *User) error {
-	query := `INSERT INTO users (id, username, email, password, role, last_login, updated_at, is_active)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+func (r *userRepo) Create(ctx context.Context, u *User) error {
+	query := `INSERT INTO users (id, fullname, email, password, role, provider, last_login, created_by, created_at, updated_by, updated_at, is_active)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 	_, err := r.db.Exec(ctx, query,
-		u.ID, u.Username, u.Email, u.Password,
-		u.Role, u.LastLogin, u.UpdatedAt, u.IsActive,
+		u.ID, u.Fullname, u.Email, u.Password,
+		u.Role, u.Provider, u.LastLogin, u.CreatedBy, u.CreatedAt, u.UpdatedBy, u.UpdatedAt, u.IsActive,
 	)
 	return err
 }
 
-func (r *repository) UpdateLastLogin(ctx context.Context, id string) error {
+func (r *userRepo) UpdateLastLogin(ctx context.Context, id string) error {
 	_, err := r.db.Exec(
 		ctx,
 		`UPDATE users SET last_login = NOW(), updated_at = NOW() WHERE id = $1`,

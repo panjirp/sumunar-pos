@@ -1,13 +1,64 @@
 basePath: /api/v1
 definitions:
-  dto.ErrorResponse:
+  dto.AuthResponse:
     properties:
-      message:
+      email:
         type: string
+      id:
+        type: string
+      refresh_token:
+        type: string
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.GoogleLoginRequest:
+    properties:
+      id_token:
+        type: string
+    required:
+    - id_token
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dto.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   dto.StoreRequest:
     properties:
       address:
+        type: string
+      code:
+        type: string
+      logo:
         type: string
       name:
         type: string
@@ -15,11 +66,14 @@ definitions:
         type: string
     required:
     - address
+    - code
     - name
     type: object
   dto.StoreResponse:
     properties:
       address:
+        type: string
+      code:
         type: string
       created_at:
         type: string
@@ -29,6 +83,8 @@ definitions:
         type: string
       is_active:
         type: boolean
+      logo:
+        type: string
       name:
         type: string
       phone:
@@ -36,6 +92,31 @@ definitions:
       updated_at:
         type: string
       updated_by:
+        type: string
+    type: object
+  sumunar-pos-core_internal_auth_dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  sumunar-pos-core_internal_product_dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  sumunar-pos-core_internal_productservice_dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  sumunar-pos-core_internal_servicetype_dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  sumunar-pos-core_internal_store_dto.ErrorResponse:
+    properties:
+      message:
         type: string
     type: object
 host: localhost:8080
@@ -47,6 +128,249 @@ info:
   title: Sumunar POS API
   version: "1.0"
 paths:
+  /auth/google:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Google Login
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GoogleLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+      summary: Login using Google ID Token
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+      summary: Login with email and password
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Refresh Token
+        in: formData
+        name: refresh_token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout and revoke refresh token
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+      summary: Refresh JWT token
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Register data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_auth_dto.ErrorResponse'
+      summary: Register new user
+      tags:
+      - Auth
+  /products:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Store request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StoreRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_product_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_product_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new product
+      tags:
+      - products
+  /productservice:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Store request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StoreRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_productservice_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_productservice_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new product service
+      tags:
+      - productservice
+  /servicetypes:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Store request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StoreRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_servicetype_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/sumunar-pos-core_internal_servicetype_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new service type
+      tags:
+      - servicetypes
   /stores:
     post:
       consumes:
@@ -68,11 +392,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/sumunar-pos-core_internal_store_dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/sumunar-pos-core_internal_store_dto.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a new store

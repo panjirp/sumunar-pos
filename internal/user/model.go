@@ -7,7 +7,7 @@ import (
 
 type User struct {
 	ID        string     `json:"id"`
-	Username  string     `json:"username"`
+	Fullname  string     `json:"fullname"`
 	Email     string     `json:"email"`
 	GoogleID  *string    `json:"google_id,omitempty"` // nullable jika manual
 	Password  *string    `json:"password,omitempty"`  // nullable jika pakai Google

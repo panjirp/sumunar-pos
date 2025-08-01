@@ -6,21 +6,21 @@ import (
 	"sumunar-pos-core/pkg/db"
 )
 
-type Repository interface {
+type UserStoreRepository interface {
 	Assign(ctx context.Context, us *UserStore) error
 	CreateTx(ctx context.Context, tx db.DBTX, us *UserStore) error
 	FindStoresByUserID(ctx context.Context, userID string) ([]string, error)
 }
 
-type repository struct {
+type userStoreRepo struct {
 	db db.DBTX
 }
 
-func NewRepository(db db.DBTX) Repository {
-	return &repository{db: db}
+func NewUserStoreRepository(db db.DBTX) UserStoreRepository {
+	return &userStoreRepo{db: db}
 }
 
-func (r *repository) Assign(ctx context.Context, us *UserStore) error {
+func (r *userStoreRepo) Assign(ctx context.Context, us *UserStore) error {
 	query := `
 		INSERT INTO user_stores (user_id, store_id, created_at, created_by, updated_at, updated_by)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -29,7 +29,7 @@ func (r *repository) Assign(ctx context.Context, us *UserStore) error {
 	return err
 }
 
-func (r *repository) CreateTx(ctx context.Context, tx db.DBTX, us *UserStore) error {
+func (r *userStoreRepo) CreateTx(ctx context.Context, tx db.DBTX, us *UserStore) error {
 	query := `
 		INSERT INTO user_stores (user_id, store_id, created_at, created_by, updated_at, updated_by)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -38,7 +38,7 @@ func (r *repository) CreateTx(ctx context.Context, tx db.DBTX, us *UserStore) er
 	return err
 }
 
-func (r *repository) FindStoresByUserID(ctx context.Context, userID string) ([]string, error) {
+func (r *userStoreRepo) FindStoresByUserID(ctx context.Context, userID string) ([]string, error) {
 	query := `SELECT store_id FROM user_stores WHERE user_id = $1`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {

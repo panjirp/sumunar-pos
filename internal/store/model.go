@@ -7,6 +7,7 @@ import (
 type Store struct {
 	ID      string  `json:"id"`
 	Name    string  `json:"name"`
+	Code    string  `json:"code"`
 	Address string  `json:"address"`
 	Phone   *string `json:"phone,omitempty"`
 	Logo    *string `json:"logo,omitempty"`

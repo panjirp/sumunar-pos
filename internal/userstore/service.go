@@ -16,10 +16,10 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
+	repo UserStoreRepository
 }
 
-func NewService(repo Repository) Service {
+func NewService(repo UserStoreRepository) Service {
 	return &service{repo: repo}
 }
 

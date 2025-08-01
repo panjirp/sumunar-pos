@@ -13,7 +13,7 @@ import (
 func ToUserModel(req *dto.UserRequest, createdBy string) *User {
 	return &User{
 		ID:       uuid.New().String(),
-		Username: req.Username,
+		Fullname: req.Fullname,
 		Email:    req.Email,
 		Password: req.Password,
 		GoogleID: req.GoogleID,

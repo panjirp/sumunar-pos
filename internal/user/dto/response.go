@@ -4,7 +4,7 @@ import "time"
 
 type UserResponse struct {
 	ID        string     `json:"id"`
-	Username  string     `json:"username"`
+	Fullname  string     `json:"fullname"`
 	Email     string     `json:"email"`
 	GoogleID  *string    `json:"google_id,omitempty"`
 	Picture   *string    `json:"picture,omitempty"`
